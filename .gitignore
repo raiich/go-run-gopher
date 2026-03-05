@@ -30,3 +30,12 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Distribution directory
+dist/
+
+# Local development environment
+.local/
+
+.claude
+.github
