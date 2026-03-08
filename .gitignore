@@ -39,3 +39,8 @@ dist/
 
 .claude
 .github
+
+# Because this is not node app
+package.json
+pnpm-lock.yaml
+node_modules

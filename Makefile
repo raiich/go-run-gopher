@@ -5,6 +5,7 @@ include mk/variables.mk
 include mk/dev.mk
 include mk/build.mk
 include mk/licenses.mk
+include mk/deploy.mk
 
 # Default target
 .DEFAULT_GOAL := help
