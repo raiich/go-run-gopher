@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-2D shuttle run game built with Ebiten v2.9.8. Run with `make run`, test with `make test`.
+2D shuttle run game built with Ebitengine. Run with `make run`, test with `make test`.
 
 ## Package structure
 

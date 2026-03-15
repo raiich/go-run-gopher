@@ -29,7 +29,7 @@ make test         # Run tests
 ### Prerequisites
 
 - Go 1.25+
-- [Ebiten v2.9.8](https://ebitengine.org/) system requirements
+- [Ebitengine](https://ebitengine.org/) system requirements
 
 ## Documentation
 

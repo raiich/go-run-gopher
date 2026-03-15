@@ -29,7 +29,7 @@ make test         # テスト実行
 ### 前提条件
 
 - Go 1.25+
-- [Ebiten v2.9.8](https://ebitengine.org/) の動作要件
+- [Ebitengine](https://ebitengine.org/) の動作要件
 
 ## ドキュメント
 
