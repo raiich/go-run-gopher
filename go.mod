@@ -4,7 +4,7 @@ go 1.25
 
 require (
 	github.com/hajimehoshi/ebiten/v2 v2.9.8
-	github.com/raiich/kazura v0.0.0-20251214152900-68f839e05019
+	github.com/raiich/kazura v0.0.0-20260916161916-3cccdb25f140
 )
 
 require (

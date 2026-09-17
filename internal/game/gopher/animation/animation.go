@@ -6,11 +6,12 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/raiich/kazura/must"
 	"github.com/raiich/kazura/state"
+	"github.com/raiich/kazura/task"
 )
 
 // animationData holds the animation state data
 type animationData struct {
-	dispatcher state.Dispatcher
+	dispatcher task.Dispatcher
 	images     []*ebiten.Image
 	current    int
 }
@@ -22,7 +23,7 @@ type Animation struct {
 }
 
 // New creates a new animation state machine
-func New(dispatcher state.Dispatcher) *Animation {
+func New(dispatcher task.Dispatcher) *Animation {
 	data := &animationData{
 		dispatcher: dispatcher,
 		images:     gopherImages,
@@ -65,7 +66,7 @@ type animationEvent interface {
 }
 
 type animationState interface {
-	Entry(machine *state.EntryMachine[*animationData], event state.Event)
+	Entry(machine *state.EntryMachine[*animationData], event state.Event) state.Command
 }
 
 // Events
@@ -78,21 +79,23 @@ type tickEvent struct{}
 
 type stoppedState struct{}
 
-func (s stoppedState) Entry(machine *state.EntryMachine[*animationData], event state.Event) {
+func (s stoppedState) Entry(machine *state.EntryMachine[*animationData], event state.Event) state.Command {
 	data := machine.Value()
 	data.current = 0
+	return nil
 }
 
 type runningState struct{}
 
-func (s runningState) Entry(machine *state.EntryMachine[*animationData], event state.Event) {
+func (s runningState) Entry(machine *state.EntryMachine[*animationData], event state.Event) state.Command {
 	data := machine.Value()
 
 	// tickEvent: increment frame and wrap around
 	data.current = (data.current + 1) % len(data.images)
 
 	// Schedule next frame transition
-	machine.AfterFunc(data.dispatcher, 100*time.Millisecond, func(machine *state.AfterFuncMachine[*animationData]) {
+	must.NoError(machine.AfterFunc(data.dispatcher, 100*time.Millisecond, func(machine *state.AfterFuncMachine[*animationData]) {
 		must.NoError(machine.Trigger(tickEvent{}))
-	})
+	}))
+	return nil
 }

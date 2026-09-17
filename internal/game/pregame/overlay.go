@@ -8,6 +8,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/raiich/kazura/must"
 	"github.com/raiich/kazura/state"
+	"github.com/raiich/kazura/task"
 )
 
 // Overlay manages the pregame display and state machine
@@ -29,7 +30,7 @@ func (o *Overlay) Draw(screen *ebiten.Image) {
 }
 
 // NewOverlay creates a new pregame overlay with the specified font and screen dimensions
-func NewOverlay(dispatcher state.Dispatcher, face80 *text.GoTextFace, screenWidth, screenHeight int) *Overlay {
+func NewOverlay(dispatcher task.Dispatcher, face80 *text.GoTextFace, screenWidth, screenHeight int) *Overlay {
 	data := &pregameData{
 		dispatcher:   dispatcher,
 		textFace:     face80,

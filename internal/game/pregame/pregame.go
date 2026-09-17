@@ -11,6 +11,7 @@ import (
 	libui "github.com/raiich/go-run-gopher/lib/ui"
 	"github.com/raiich/kazura/must"
 	"github.com/raiich/kazura/state"
+	"github.com/raiich/kazura/task"
 )
 
 // stateGraph defines the pregame state transitions
@@ -26,7 +27,7 @@ type pregameEvent interface {
 }
 
 type pregameState interface {
-	Entry(machine *state.EntryMachine[*pregameData], event state.Event)
+	Entry(machine *state.EntryMachine[*pregameData], event state.Event) state.Command
 	Draw(data *pregameData, screen *ebiten.Image)
 }
 
@@ -39,8 +40,9 @@ type stopEvent struct{}
 
 type noneState struct{}
 
-func (s noneState) Entry(machine *state.EntryMachine[*pregameData], event state.Event) {
+func (s noneState) Entry(machine *state.EntryMachine[*pregameData], event state.Event) state.Command {
 	// nothing to do
+	return nil
 }
 
 func (s noneState) Draw(data *pregameData, screen *ebiten.Image) {
@@ -50,25 +52,26 @@ func (s noneState) Draw(data *pregameData, screen *ebiten.Image) {
 // displayState represents the pregame display state before game starts
 type displayState struct{}
 
-func (s displayState) Entry(machine *state.EntryMachine[*pregameData], event state.Event) {
+func (s displayState) Entry(machine *state.EntryMachine[*pregameData], event state.Event) state.Command {
 	value := machine.Value()
 	e := event.(tickEvent)
 
 	if e.nextCount > 0 {
 		value.text = fmt.Sprintf("%v", int(e.nextCount/time.Second))
-		machine.AfterFunc(value.dispatcher, 300*time.Millisecond, func(machine *state.AfterFuncMachine[*pregameData]) {
+		must.NoError(machine.AfterFunc(value.dispatcher, 300*time.Millisecond, func(machine *state.AfterFuncMachine[*pregameData]) {
 			must.NoError(machine.Trigger(tickEvent{
 				nextCount: e.nextCount - 1*time.Second,
 				callback:  e.callback,
 			}))
-		})
+		}))
 	} else {
 		value.text = "GO"
 		e.callback()
-		machine.AfterFunc(value.dispatcher, 300*time.Millisecond, func(machine *state.AfterFuncMachine[*pregameData]) {
+		must.NoError(machine.AfterFunc(value.dispatcher, 300*time.Millisecond, func(machine *state.AfterFuncMachine[*pregameData]) {
 			must.NoError(machine.Trigger(stopEvent{}))
-		})
+		}))
 	}
+	return nil
 }
 
 func (s displayState) Draw(data *pregameData, screen *ebiten.Image) {
@@ -91,7 +94,7 @@ func (s displayState) Draw(data *pregameData, screen *ebiten.Image) {
 }
 
 type pregameData struct {
-	dispatcher   state.Dispatcher
+	dispatcher   task.Dispatcher
 	textFace     *text.GoTextFace
 	text         string
 	screenWidth  int

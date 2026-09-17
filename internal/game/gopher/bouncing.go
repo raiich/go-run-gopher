@@ -38,7 +38,7 @@ type gopherEvent interface {
 }
 
 type gopherState interface {
-	Entry(machine *state.EntryMachine[*Data], event state.Event)
+	Entry(machine *state.EntryMachine[*Data], event state.Event) state.Command
 	handleInput(g *Gopher, button ui.ButtonType, justPressed bool)
 	update(g *Gopher)
 }
@@ -52,7 +52,7 @@ type recoverEvent struct{}
 
 type normalState struct{}
 
-func (s normalState) Entry(machine *state.EntryMachine[*Data], event state.Event) {
+func (s normalState) Entry(machine *state.EntryMachine[*Data], event state.Event) state.Command {
 	g := machine.Value()
 	g.speedX = 0
 	g.Y = g.InitialY
@@ -60,6 +60,7 @@ func (s normalState) Entry(machine *state.EntryMachine[*Data], event state.Event
 	if _, ok := event.(recoverEvent); ok && g.OnRecover != nil {
 		g.OnRecover()
 	}
+	return nil
 }
 
 func (s normalState) handleInput(g *Gopher, button ui.ButtonType, justPressed bool) {
@@ -101,7 +102,7 @@ func (s normalState) update(g *Gopher) {
 // boundState represents the bouncing animation state
 type boundState struct{}
 
-func (s boundState) Entry(machine *state.EntryMachine[*Data], event state.Event) {
+func (s boundState) Entry(machine *state.EntryMachine[*Data], event state.Event) state.Command {
 	g := machine.Value()
 
 	// Calculate bounce strength based on collision speed (before stopping)
@@ -124,12 +125,13 @@ func (s boundState) Entry(machine *state.EntryMachine[*Data], event state.Event)
 	g.speedY = bounceSpeedY
 	g.lastBounceStrength = bounceSpeedY // Store bounce strength for stun duration
 
-	must.NoError(machine.OnExit(func(machine *state.ExitMachine[*Data], event state.Event) *state.Guarded {
+	must.NoError(machine.OnExit(func(state.Event) *state.Guarded {
 		// Reset bouncing offsets
 		g.Y = g.InitialY
 
 		return nil
 	}))
+	return nil
 }
 
 func (s boundState) handleInput(g *Gopher, button ui.ButtonType, justPressed bool) {
@@ -154,7 +156,7 @@ func (s boundState) update(g *Gopher) {
 // stunState represents the stun/recovery state after landing
 type stunState struct{}
 
-func (s stunState) Entry(machine *state.EntryMachine[*Data], event state.Event) {
+func (s stunState) Entry(machine *state.EntryMachine[*Data], event state.Event) state.Command {
 	g := machine.Value()
 
 	// Calculate stun duration based on bounce strength (lastBounceStrength)
@@ -177,9 +179,10 @@ func (s stunState) Entry(machine *state.EntryMachine[*Data], event state.Event) 
 		stunDuration = time.Duration(500+t*200) * time.Millisecond
 	}
 
-	machine.AfterFunc(g.dispatcher, stunDuration, func(machine *state.AfterFuncMachine[*Data]) {
+	must.NoError(machine.AfterFunc(g.dispatcher, stunDuration, func(machine *state.AfterFuncMachine[*Data]) {
 		must.NoError(machine.Trigger(recoverEvent{}))
-	})
+	}))
+	return nil
 }
 
 func (s stunState) handleInput(g *Gopher, button ui.ButtonType, justPressed bool) {

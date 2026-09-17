@@ -115,7 +115,7 @@ machine.AfterFunc(dispatcher, 3*time.Second, func(m *state.AfterFuncMachine[*Dat
 stateDiagram-v2
     [*] --> Title
     Title --> Pregame : go タップ
-    Pregame --> Running : カウントダウン完了
+    Pregame --> Running : GO 表示
     Running --> Result : 2回連続ミス
     Result --> Title : return タップ（3秒後に有効化）
 ```
@@ -123,7 +123,7 @@ stateDiagram-v2
 | 状態 | 振る舞い |
 |---|---|
 | **Title** | ゲームデータ初期化、Gopher を初期位置に配置 |
-| **Pregame** | 「GO」表示（300ms）後に自動遷移 |
+| **Pregame** | 「GO」を 300ms 表示し、同時に Running へ遷移 |
 | **Running** | メインループ。音階タイマー、ゴール判定、ステージ進行 |
 | **Result** | ターミナル風オーバーレイ。テスト結果 + BenchmarkGopher + Go Proverb |
 

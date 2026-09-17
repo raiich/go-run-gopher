@@ -20,6 +20,7 @@ import (
 	libui "github.com/raiich/go-run-gopher/lib/ui"
 	"github.com/raiich/kazura/must"
 	"github.com/raiich/kazura/state"
+	"github.com/raiich/kazura/task"
 )
 
 // stateGraph defines the screen state transitions
@@ -36,7 +37,7 @@ type sceneEvent interface {
 }
 
 type sceneState interface {
-	Entry(machine *state.EntryMachine[*sceneData], event state.Event)
+	Entry(machine *state.EntryMachine[*sceneData], event state.Event) state.Command
 	handleInput(sc *Scene, button ui2.ButtonType, justPressed bool)
 	update(sc *Scene) error
 	draw(sc *Scene, screen *ebiten.Image)
@@ -52,7 +53,7 @@ type resetEvent struct{}
 // titleState represents the title screen state
 type titleState struct{}
 
-func (s titleState) Entry(machine *state.EntryMachine[*sceneData], event state.Event) {
+func (s titleState) Entry(machine *state.EntryMachine[*sceneData], event state.Event) state.Command {
 	data := machine.Value()
 	data.gameData.ResetForNewGame()
 	data.gopher.SpeedMax = calculateSpeedForStage(data.gameData.stage)
@@ -60,6 +61,7 @@ func (s titleState) Entry(machine *state.EntryMachine[*sceneData], event state.E
 	data.gopher.Y = data.gopher.InitialY
 	data.gopher.Direction = 1
 	data.ui.ActionButton.SetText("go")
+	return nil
 }
 
 func (s titleState) handleInput(sc *Scene, button ui2.ButtonType, justPressed bool) {
@@ -88,16 +90,19 @@ func (s titleState) draw(sc *Scene, screen *ebiten.Image) {
 // pregameState represents the pregame state before game starts
 type pregameState struct{}
 
-func (s pregameState) Entry(machine *state.EntryMachine[*sceneData], event state.Event) {
+func (s pregameState) Entry(machine *state.EntryMachine[*sceneData], event state.Event) state.Command {
 	data := machine.Value()
 
 	data.ui.ActionButton.SetText("go")
 
+	// Entry cannot trigger a transition, and the callback may run inside it,
+	// so the event is carried out of the transition by the dispatcher.
 	must.NoError(data.overlay.Start(0, func() {
-		machine.AfterFunc(data.dispatcher, 0, func(machine *state.AfterFuncMachine[*sceneData]) {
+		must.NoError(machine.AfterFunc(data.dispatcher, 0, func(machine *state.AfterFuncMachine[*sceneData]) {
 			must.NoError(machine.Trigger(gameStartEvent{}))
-		})
+		}))
 	}))
+	return nil
 }
 
 func (s pregameState) handleInput(sc *Scene, button ui2.ButtonType, justPressed bool) {
@@ -117,8 +122,9 @@ func (s pregameState) draw(sc *Scene, screen *ebiten.Image) {
 // runningState represents the main game running state
 type runningState struct{}
 
-func (s runningState) Entry(machine *state.EntryMachine[*sceneData], event state.Event) {
+func (s runningState) Entry(machine *state.EntryMachine[*sceneData], event state.Event) state.Command {
 	// nothing to do
+	return nil
 }
 
 func (s runningState) handleInput(sc *Scene, button ui2.ButtonType, justPressed bool) {
@@ -242,18 +248,19 @@ func (s runningState) draw(sc *Scene, screen *ebiten.Image) {
 // resultState represents the game over/result screen state
 type resultState struct{}
 
-func (s resultState) Entry(machine *state.EntryMachine[*sceneData], event state.Event) {
+func (s resultState) Entry(machine *state.EntryMachine[*sceneData], event state.Event) state.Command {
 	data := machine.Value()
 	data.gopher.AdjustSpeed(0)
 	data.gameData.proverb = proverbs.Random()
 	data.gameData.resultReady = false
 
 	// Enable input after 3 seconds cooldown
-	machine.AfterFunc(data.dispatcher, 3*time.Second, func(machine *state.AfterFuncMachine[*sceneData]) {
+	must.NoError(machine.AfterFunc(data.dispatcher, 3*time.Second, func(machine *state.AfterFuncMachine[*sceneData]) {
 		d := machine.Value()
 		d.gameData.resultReady = true
 		d.ui.ActionButton.SetText("return")
-	})
+	}))
+	return nil
 }
 
 func (s resultState) handleInput(sc *Scene, button ui2.ButtonType, justPressed bool) {
@@ -263,7 +270,7 @@ func (s resultState) handleInput(sc *Scene, button ui2.ButtonType, justPressed b
 }
 
 func (s resultState) update(sc *Scene) error {
-	// No update needed for result state (auto-transitions via timer in Entry)
+	// No update needed for result state (the timer in Entry enables input)
 	return nil
 }
 
@@ -373,7 +380,7 @@ func (s resultState) draw(sc *Scene, screen *ebiten.Image) {
 // game holds the scene state data
 type sceneData struct {
 	scenes      *scene.Manager
-	dispatcher  state.Dispatcher
+	dispatcher  task.Dispatcher
 	ui          *ui2.Controller
 	gopher      *gopher.Gopher
 	effect      *effect.Overlay

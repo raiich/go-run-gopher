@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/raiich/kazura/state"
+	"github.com/raiich/kazura/task"
 	"github.com/raiich/kazura/task/eventloop"
 )
 
@@ -70,7 +70,7 @@ func (m *Manager) PopScene() error {
 }
 
 // Dispatcher returns the event dispatcher for scheduling tasks.
-func (m *Manager) Dispatcher() state.Dispatcher {
+func (m *Manager) Dispatcher() task.Dispatcher {
 	return m.dispatcher
 }
 

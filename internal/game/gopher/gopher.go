@@ -7,6 +7,7 @@ import (
 	"github.com/raiich/go-run-gopher/internal/game/ui"
 	"github.com/raiich/kazura/must"
 	"github.com/raiich/kazura/state"
+	"github.com/raiich/kazura/task"
 )
 
 // Bounds represents the field boundaries for gopher movement
@@ -31,7 +32,7 @@ type Config struct {
 type Data struct {
 	Config
 	animation          *animation.Animation
-	dispatcher         state.Dispatcher
+	dispatcher         task.Dispatcher
 	X                  float64
 	Y                  float64
 	Direction          int // 1 = right, -1 = left
@@ -50,7 +51,7 @@ type Gopher struct {
 
 // New creates and initializes a new gopher character with animation and state machine.
 // The gopher is positioned at the left side of the screen facing right.
-func New(dispatcher state.Dispatcher, screenWidth, screenHeight float64) *Gopher {
+func New(dispatcher task.Dispatcher, screenWidth, screenHeight float64) *Gopher {
 	// Create gopher config with screen bounds
 	config := Config{
 		Size:          defaultSize,
